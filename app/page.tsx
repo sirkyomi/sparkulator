@@ -115,6 +115,7 @@ const uiText = {
 
 const appVersion = packageJson.version;
 
+const githubUrl = "https://github.com/sirkyomi/sparkulator";
 const wikiBase = "https://oddsparks.wiki.gg/wiki/";
 
 const items: Record<
@@ -670,6 +671,19 @@ function WorkstationIcon({ id }: { id: WorkstationId }) {
   );
 }
 
+function GitHubIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-5 w-5"
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path d="M12 2C6.48 2 2 6.58 2 12.23c0 4.52 2.87 8.35 6.84 9.71.5.09.68-.22.68-.49l-.01-1.75c-2.78.62-3.37-1.37-3.37-1.37-.45-1.19-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.55-1.14-4.55-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.71 0 0 .84-.28 2.75 1.05A9.32 9.32 0 0 1 12 6.93c.85 0 1.7.12 2.5.35 1.91-1.33 2.75-1.05 2.75-1.05.55 1.4.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.95.68 1.91l-.01 2.8c0 .27.18.59.69.49A10.08 10.08 0 0 0 22 12.23C22 6.58 17.52 2 12 2Z" />
+    </svg>
+  );
+}
+
 function FlowGraph({
   language,
   targetItem,
@@ -1023,37 +1037,8 @@ export default function Home() {
   return (
     <main className="page-shell text-[#24190f]">
       <div className="flex w-full flex-col gap-5 px-2 py-4 sm:px-3 lg:px-4">
-        <header className="hero-panel relative isolate flex flex-col gap-5 overflow-hidden px-5 py-5 lg:flex-row lg:items-end lg:justify-between">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#b35d36]/35 to-transparent" />
-          <div className="relative">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#a76534]">
-              Oddsparks: An Automation Adventure
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-[#24190f] sm:text-5xl">
-              Sparkulator
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm font-medium text-[#746142]">
-              {format(target)}/min {text.with} {crewOption.label}
-            </p>
-          </div>
-          <div className="relative flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 rounded-md border border-[#8a6138]/20 bg-[#fffaf0]/70 px-3 py-2 shadow-inner">
-              <Image
-                className="h-10 w-auto max-w-10 object-contain"
-                src={items[selectedItem].image}
-                alt=""
-                width={44}
-                height={44}
-              />
-              <div>
-                <div className="text-xs font-bold uppercase tracking-[0.14em] text-[#a76534]">
-                  {text.activeTarget}
-                </div>
-                <div className="text-sm font-bold text-[#24190f]">
-                  {items[selectedItem].name}
-                </div>
-              </div>
-            </div>
+        <nav className="flex flex-wrap items-center justify-end gap-3 px-1">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <a
               className="w-fit rounded-md border border-[#b35d36]/25 bg-[#fffaf0] px-3 py-2 text-sm font-semibold text-[#4b3420] shadow-sm transition hover:-translate-y-0.5 hover:border-[#b35d36]/45 hover:bg-white"
               href="https://oddsparks.wiki.gg"
@@ -1062,33 +1047,56 @@ export default function Home() {
             >
               {text.wikiData}
             </a>
-            <div className="grid justify-items-end gap-1.5">
-              <span className="rounded-md border border-[#8a6138]/15 bg-[#fffaf0]/55 px-2.5 py-1 text-xs font-bold text-[#746142] shadow-inner">
-                v{appVersion}
-              </span>
-              <div className="flex rounded-md border border-[#8a6138]/20 bg-[#fffaf0]/70 p-1 shadow-inner">
-                {(["en", "de"] as const).map((option) => {
-                  const active = language === option;
+            <a
+              aria-label="Open Sparkulator on GitHub"
+              className="grid h-10 w-10 place-items-center rounded-md border border-[#b35d36]/25 bg-[#fffaf0] text-[#4b3420] shadow-sm transition hover:-translate-y-0.5 hover:border-[#b35d36]/45 hover:bg-white"
+              href={githubUrl}
+              target="_blank"
+              rel="noreferrer"
+              title="GitHub"
+            >
+              <GitHubIcon />
+            </a>
+            <div className="flex rounded-md border border-[#8a6138]/20 bg-[#fffaf0]/70 p-1 shadow-inner">
+              {(["en", "de"] as const).map((option) => {
+                const active = language === option;
 
-                  return (
-                    <button
-                      aria-pressed={active}
-                      className={`rounded-[5px] px-3 py-1.5 text-sm font-bold transition ${
-                        active
-                          ? "bg-[#b35d36] text-white shadow-sm"
-                          : "text-[#60482c] hover:bg-white"
-                      }`}
-                      key={option}
-                      title={text.language}
-                      type="button"
-                      onClick={() => setLanguage(option)}
-                    >
-                      {option.toUpperCase()}
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    aria-pressed={active}
+                    className={`rounded-[5px] px-3 py-1.5 text-sm font-bold transition ${
+                      active
+                        ? "bg-[#b35d36] text-white shadow-sm"
+                        : "text-[#60482c] hover:bg-white"
+                    }`}
+                    key={option}
+                    title={text.language}
+                    type="button"
+                    onClick={() => setLanguage(option)}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                );
+              })}
             </div>
+          </div>
+        </nav>
+
+        <header className="hero-panel relative isolate overflow-hidden px-5 py-5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#b35d36]/35 to-transparent" />
+          <div className="relative">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#a76534]">
+              Oddsparks: An Automation Adventure
+            </p>
+            <h1 className="mt-2 text-3xl font-bold text-[#24190f] sm:text-5xl">
+              Sparkulator
+              <sup className="ml-2 align-super text-xs font-bold text-[#a76534] sm:text-sm">
+                v{appVersion}
+              </sup>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm font-medium text-[#746142]">
+              {format(target)}/min {text.with} {crewOption.label}
+            </p>
           </div>
         </header>
 
