@@ -23,6 +23,14 @@ Sparkulator turns Oddsparks crafting chains into a clear production plan. Pick a
 
 It is built for players who want to design cleaner automation layouts without doing repeated rate math by hand.
 
+## Main Feature
+
+<div align="center">
+  <img src="public/sparkulator-flow.png" alt="Sparkulator interactive production flow graph" width="100%" />
+</div>
+
+The interactive flow graph is the centerpiece: zoom with the mouse wheel, drag the canvas with left click, jump into fullscreen, and inspect every machine, resource rate, and output step in one view.
+
 <div align="center">
   <table>
     <tr>
@@ -36,7 +44,7 @@ It is built for players who want to design cleaner automation layouts without do
 
 ## Highlights
 
-- Visual production graph that shows how ingredients flow into machines and final output.
+- Interactive production graph with zoom, drag-to-pan, fullscreen, and resource-rate edges.
 - Machine count summary for every workstation in the selected plan.
 - Raw demand breakdown in items per minute.
 - Crew presets for Stumpy and Crafty Spark combinations.

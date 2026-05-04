@@ -1,7 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+  type WheelEvent,
+} from "react";
 import packageJson from "../package.json";
 
 type ItemId =
@@ -636,12 +643,13 @@ function calculatePlan(
 
 function ItemIcon({ item, size = "md" }: { item: ItemId; size?: "sm" | "md" }) {
   const itemData = items[item];
-  const className = size === "sm" ? "h-8 w-8" : "h-12 w-12";
+  const frameClassName = size === "sm" ? "h-10 w-10" : "h-12 w-12";
+  const imageClassName = size === "sm" ? "h-7 w-7" : "h-10 w-10";
 
   return (
-    <span className="icon-frame grid h-12 w-12 shrink-0 place-items-center">
+    <span className={`icon-frame grid ${frameClassName} shrink-0 place-items-center`}>
       <Image
-        className={`${className} object-contain [image-rendering:auto]`}
+        className={`${imageClassName} object-contain [image-rendering:auto]`}
         src={itemData.image}
         alt=""
         width={48}
@@ -655,17 +663,17 @@ function WorkstationIcon({ id }: { id: WorkstationId }) {
   const workstation = workstations[id];
 
   return (
-    <span className="icon-frame grid h-11 w-11 shrink-0 place-items-center">
+    <span className="icon-frame grid h-12 w-12 shrink-0 place-items-center">
       {workstation.image ? (
         <Image
-          className="h-10 w-10 object-contain"
+          className="h-9 w-9 object-contain"
           src={workstation.image}
           alt=""
           width={48}
           height={48}
         />
       ) : (
-        <span className="text-sm font-semibold text-[#60482c]">R</span>
+        <span className="text-sm font-semibold text-[var(--muted)]">R</span>
       )}
     </span>
   );
@@ -695,10 +703,23 @@ function FlowGraph({
 }) {
   const text = uiText[language];
   const numberLocale = language === "de" ? "de-DE" : "en-US";
-  const nodeWidth = 232;
-  const nodeHeight = 96;
-  const rowGap = 140;
-  const padding = 44;
+  const boardRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef({
+    active: false,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  });
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const nodeWidth = 248;
+  const nodeHeight = 118;
+  const rowGap = 164;
+  const padding = 46;
   const graphNodes = new Map<
     string,
     {
@@ -772,7 +793,7 @@ function FlowGraph({
         to: id,
         item: child.item,
         rate: child.rate,
-        color: child.recipe ? "#6aa6b8" : "#d08a55",
+        color: child.recipe ? "#6cb7be" : "#d59a5b",
       });
     });
 
@@ -780,7 +801,7 @@ function FlowGraph({
   }
 
   measure(tree, 0);
-  const columnGap = maxDepth > 3 ? 330 : 380;
+  const columnGap = maxDepth > 3 ? 390 : 430;
   const root = place(tree, 0);
   const outputId = "output";
   const outputColumn = maxDepth + 1;
@@ -800,7 +821,7 @@ function FlowGraph({
     to: outputId,
     item: targetItem,
     rate: tree.rate,
-    color: "#78c66d",
+    color: "#7cc66f",
   });
 
   const nodes = [...graphNodes.values()];
@@ -811,6 +832,125 @@ function FlowGraph({
   const verticalOffset = (height - contentHeight) / 2;
   const contentLeft = `max(0px, calc((100% - ${width}px) / 2))`;
 
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const active = document.fullscreenElement === boardRef.current;
+      setFullscreen(active);
+
+      if (!active) {
+        setPan({ x: 0, y: 0 });
+        setZoom(1);
+      }
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    function preventPageWheel(event: globalThis.WheelEvent) {
+      event.preventDefault();
+    }
+
+    viewport.addEventListener("wheel", preventPageWheel, { passive: false });
+
+    return () => {
+      viewport.removeEventListener("wheel", preventPageWheel);
+    };
+  }, []);
+
+  function updateZoom(direction: "in" | "out") {
+    setZoom((current) => {
+      const next = direction === "in" ? current + 0.15 : current - 0.15;
+      return Math.min(1.75, Math.max(0.45, Number(next.toFixed(2))));
+    });
+  }
+
+  function handleWheel(event: WheelEvent<HTMLDivElement>) {
+    event.preventDefault();
+
+    const viewport = event.currentTarget.getBoundingClientRect();
+    const pointerX = event.clientX - viewport.left;
+    const pointerY = event.clientY - viewport.top;
+    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+    const nextZoom = Math.min(
+      1.75,
+      Math.max(0.45, Number((zoom * zoomFactor).toFixed(2))),
+    );
+
+    if (nextZoom === zoom) {
+      return;
+    }
+
+    const contentX = (pointerX - pan.x) / zoom;
+    const contentY = (pointerY - pan.y) / zoom;
+
+    setZoom(nextZoom);
+    setPan({
+      x: pointerX - contentX * nextZoom,
+      y: pointerY - contentY * nextZoom,
+    });
+  }
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    dragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: pan.x,
+      originY: pan.y,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragging(true);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!dragRef.current.active) {
+      return;
+    }
+
+    setPan({
+      x: dragRef.current.originX + event.clientX - dragRef.current.startX,
+      y: dragRef.current.originY + event.clientY - dragRef.current.startY,
+    });
+  }
+
+  function stopDragging(event: PointerEvent<HTMLDivElement>) {
+    if (!dragRef.current.active) {
+      return;
+    }
+
+    dragRef.current.active = false;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    setDragging(false);
+  }
+
+  async function toggleFullscreen() {
+    if (!boardRef.current) {
+      return;
+    }
+
+    if (document.fullscreenElement === boardRef.current) {
+      await document.exitFullscreen();
+      return;
+    }
+
+    await boardRef.current.requestFullscreen();
+  }
+
   function position(node: (typeof nodes)[number]) {
     return {
       x: padding + node.column * columnGap,
@@ -819,16 +959,65 @@ function FlowGraph({
   }
 
   return (
-    <div className="flow-board overflow-x-auto">
+    <div className="flow-board relative overflow-hidden" ref={boardRef}>
+      <div className="absolute left-3 top-3 z-40 flex items-center gap-1 rounded-md border border-white/15 bg-[#17221d]/82 p-1 shadow-lg shadow-black/25 backdrop-blur-md">
+        <button
+          aria-label="Zoom out"
+          className="flow-control-button"
+          title="Zoom out"
+          type="button"
+          onClick={() => updateZoom("out")}
+        >
+          <span aria-hidden="true" className="flow-control-symbol">-</span>
+        </button>
+        <div className="grid h-8 min-w-12 place-items-center px-1 text-xs font-bold text-[#f7f3e8]">
+          {Math.round(zoom * 100)}%
+        </div>
+        <button
+          aria-label="Zoom in"
+          className="flow-control-button"
+          title="Zoom in"
+          type="button"
+          onClick={() => updateZoom("in")}
+        >
+          <span aria-hidden="true" className="flow-control-symbol">+</span>
+        </button>
+        <button
+          aria-label={fullscreen ? "Exit fullscreen" : "Open fullscreen"}
+          className="flow-control-button"
+          title={fullscreen ? "Exit fullscreen" : "Open fullscreen"}
+          type="button"
+          onClick={() => {
+            void toggleFullscreen();
+          }}
+        >
+          <span aria-hidden="true" className="flow-control-symbol">
+            {fullscreen ? "×" : "⛶"}
+          </span>
+        </button>
+      </div>
       <div
-        className="relative"
+        className={`flow-viewport relative overflow-hidden ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        ref={viewportRef}
+        style={{
+          backgroundPosition: `${pan.x}px ${pan.y}px`,
+          height: fullscreen ? "100%" : height,
+        }}
+        onPointerCancel={stopDragging}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={stopDragging}
+        onWheel={handleWheel}
+      >
+      <div
+        className="relative select-none"
         style={{
           width: `max(100%, ${width}px)`,
           height,
           backgroundColor: "transparent",
-          backgroundImage:
-            "linear-gradient(rgba(232,207,153,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(232,207,153,0.05) 1px, transparent 1px)",
-          backgroundSize: "30px 30px",
+          transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+          transformOrigin: "0 0",
+          touchAction: "none",
         }}
       >
         <svg
@@ -867,7 +1056,7 @@ function FlowGraph({
             const startY = fromPosition.y + nodeHeight / 2;
             const endX = toPosition.x;
             const endY = toPosition.y + nodeHeight / 2;
-            const handle = Math.max(70, (endX - startX) / 2);
+            const handle = Math.max(16, Math.min(64, (endX - startX) / 2));
             const markerId = `arrow-${edge.id.replace(/[^a-zA-Z0-9]/g, "")}`;
 
             return (
@@ -880,7 +1069,7 @@ function FlowGraph({
                 markerEnd={`url(#${markerId})`}
                 stroke={edge.color}
                 strokeLinecap="round"
-                strokeOpacity="0.75"
+                strokeOpacity="0.82"
                 strokeWidth="3"
               />
             );
@@ -897,15 +1086,15 @@ function FlowGraph({
 
           const fromPosition = position(from);
           const toPosition = position(to);
-          const left = (fromPosition.x + nodeWidth + toPosition.x) / 2 - 48;
+          const left = (fromPosition.x + nodeWidth + toPosition.x) / 2 - 42;
           const top =
             (fromPosition.y + nodeHeight / 2 + toPosition.y + nodeHeight / 2) /
               2 -
-            16;
+            14;
 
           return (
             <div
-              className="absolute z-10 flex h-8 items-center gap-1.5 rounded-full border border-[#e8cf99]/25 bg-[#172116]/95 px-2.5 text-xs font-bold text-[#fff3d4] shadow-lg shadow-black/25 backdrop-blur"
+              className="absolute z-10 flex h-8 items-center gap-1.5 rounded-full border border-white/15 bg-[#17221d]/85 px-2.5 text-xs font-bold text-[#f7f3e8] shadow-lg shadow-black/25 backdrop-blur-md"
               key={edge.id}
               style={{ left: `calc(${contentLeft} + ${left}px)`, top }}
             >
@@ -929,7 +1118,7 @@ function FlowGraph({
               : workstations[node.recipe.workstation];
           const isOutput = node.type === "output";
           const isMachine = node.type === "machine";
-          const accent = isOutput ? "#78c66d" : isMachine ? "#6aa6b8" : "#d08a55";
+          const accent = isOutput ? "#7cc66f" : isMachine ? "#6cb7be" : "#d59a5b";
           const title = isOutput
             ? text.output
             : station?.name ?? text.rawSource;
@@ -941,7 +1130,7 @@ function FlowGraph({
 
           return (
             <div
-              className="absolute z-20 flex h-24 w-[232px] flex-col justify-center gap-2 overflow-hidden rounded-md border bg-[#202b22]/95 px-3 py-2 shadow-xl shadow-black/30 backdrop-blur-sm"
+              className="absolute z-20 grid h-[118px] w-[248px] grid-rows-[auto_1fr] gap-2 overflow-hidden rounded-md border bg-[#1f2d27]/82 px-4 py-3 shadow-xl shadow-black/28 backdrop-blur-md"
               key={node.id}
               style={{
                 borderColor: `${accent}88`,
@@ -958,16 +1147,16 @@ function FlowGraph({
                   className="h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: accent }}
                 />
-                <div className="truncate text-xs font-bold uppercase text-[#d8caa7]">
+                <div className="min-w-0 truncate text-[11px] font-bold uppercase leading-none text-[#d6dfd6]">
                   {title}
                 </div>
               </div>
-              <div className="grid grid-cols-[auto_1fr] items-center gap-3">
-                <div className="flex items-center gap-1 pl-1">
+              <div className="grid min-h-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
+                <div className="flex shrink-0 items-center gap-1 pl-1">
                   {station?.image ? (
-                    <span className="dark-icon-frame grid h-11 w-11 place-items-center bg-[#2d3526]/80">
+                    <span className="dark-icon-frame grid h-12 w-12 place-items-center bg-white/8">
                       <Image
-                        className="h-9 w-9 object-contain"
+                        className="h-10 w-10 object-contain"
                         src={station.image}
                         alt=""
                         width={48}
@@ -975,9 +1164,9 @@ function FlowGraph({
                       />
                     </span>
                   ) : null}
-                  <span className="dark-icon-frame grid h-11 w-11 place-items-center">
+                  <span className="dark-icon-frame grid h-12 w-12 place-items-center">
                     <Image
-                      className="h-9 w-9 object-contain"
+                      className="h-10 w-10 object-contain"
                       src={items[node.item].image}
                       alt=""
                       width={48}
@@ -985,11 +1174,11 @@ function FlowGraph({
                     />
                   </span>
                 </div>
-                <div className="min-w-0 text-[#fff3d4]">
-                  <div className="truncate text-sm text-[#f4e5c4]">
-                  {items[node.item].name}
+                <div className="min-w-0 text-[#fbf7ea]">
+                  <div className="truncate text-sm font-semibold leading-5 text-[#edf4ec]">
+                    {items[node.item].name}
                   </div>
-                  <div className="mt-1 text-xl font-bold tracking-normal">
+                  <div className="mt-1 whitespace-nowrap text-2xl font-bold leading-none tracking-normal">
                     {metric}
                   </div>
                 </div>
@@ -997,6 +1186,7 @@ function FlowGraph({
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
@@ -1035,12 +1225,28 @@ export default function Home() {
   );
 
   return (
-    <main className="page-shell text-[#24190f]">
-      <div className="flex w-full flex-col gap-5 px-2 py-4 sm:px-3 lg:px-4">
-        <nav className="flex flex-wrap items-center justify-end gap-3 px-1">
+    <main className="page-shell text-[var(--foreground)]">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-4 px-1.5 py-3 sm:px-2 lg:px-3">
+        <nav className="surface flex flex-wrap items-center justify-between gap-3 px-3 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <ItemIcon item={selectedItem} size="sm" />
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <h1 className="truncate text-xl font-bold tracking-normal sm:text-2xl">
+                  Sparkulator
+                </h1>
+                <span className="text-xs font-bold text-[var(--copper)]">
+                  v{appVersion}
+                </span>
+              </div>
+              <p className="truncate text-sm font-medium text-[var(--muted)]">
+                Oddsparks: An Automation Adventure
+              </p>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
             <a
-              className="w-fit rounded-md border border-[#b35d36]/25 bg-[#fffaf0] px-3 py-2 text-sm font-semibold text-[#4b3420] shadow-sm transition hover:-translate-y-0.5 hover:border-[#b35d36]/45 hover:bg-white"
+              className="w-fit rounded-md border border-white/50 bg-white/45 px-3 py-2 text-sm font-semibold text-[var(--ink-soft)] shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-[var(--aether)]/40 hover:bg-white/70"
               href="https://oddsparks.wiki.gg"
               target="_blank"
               rel="noreferrer"
@@ -1049,7 +1255,7 @@ export default function Home() {
             </a>
             <a
               aria-label="Open Sparkulator on GitHub"
-              className="grid h-10 w-10 place-items-center rounded-md border border-[#b35d36]/25 bg-[#fffaf0] text-[#4b3420] shadow-sm transition hover:-translate-y-0.5 hover:border-[#b35d36]/45 hover:bg-white"
+              className="grid h-10 w-10 place-items-center rounded-md border border-white/50 bg-white/45 text-[var(--ink-soft)] shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-[var(--aether)]/40 hover:bg-white/70"
               href={githubUrl}
               target="_blank"
               rel="noreferrer"
@@ -1057,7 +1263,7 @@ export default function Home() {
             >
               <GitHubIcon />
             </a>
-            <div className="flex rounded-md border border-[#8a6138]/20 bg-[#fffaf0]/70 p-1 shadow-inner">
+            <div className="flex rounded-md border border-white/50 bg-white/35 p-1 shadow-inner backdrop-blur">
               {(["en", "de"] as const).map((option) => {
                 const active = language === option;
 
@@ -1066,8 +1272,8 @@ export default function Home() {
                     aria-pressed={active}
                     className={`rounded-[5px] px-3 py-1.5 text-sm font-bold transition ${
                       active
-                        ? "bg-[#b35d36] text-white shadow-sm"
-                        : "text-[#60482c] hover:bg-white"
+                        ? "bg-[#274238] text-white shadow-sm"
+                        : "text-[var(--muted)] hover:bg-white/65"
                     }`}
                     key={option}
                     title={text.language}
@@ -1082,29 +1288,51 @@ export default function Home() {
           </div>
         </nav>
 
-        <header className="hero-panel relative isolate overflow-hidden px-5 py-5">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#b35d36]/35 to-transparent" />
-          <div className="relative">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#a76534]">
-              Oddsparks: An Automation Adventure
-            </p>
-            <h1 className="mt-2 text-3xl font-bold text-[#24190f] sm:text-5xl">
-              Sparkulator
-              <sup className="ml-2 align-super text-xs font-bold text-[#a76534] sm:text-sm">
-                v{appVersion}
-              </sup>
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm font-medium text-[#746142]">
-              {format(target)}/min {text.with} {crewOption.label}
-            </p>
+        <header className="hero-panel relative isolate overflow-hidden px-4 py-4 sm:px-5">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+          <div className="relative grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[var(--copper)]">
+                {text.activeTarget}
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <ItemIcon item={selectedItem} />
+                <div className="min-w-0">
+                  <h2 className="truncate text-3xl font-bold tracking-normal sm:text-5xl">
+                    {items[selectedItem].name}
+                  </h2>
+                  <p className="mt-1 text-sm font-medium text-[var(--muted)]">
+                    {format(target)}/min {text.with} {crewOption.label}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:min-w-[430px]">
+              <div className="control-surface px-4 py-3">
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {text.machines}
+                </div>
+                <div className="mt-2 text-3xl font-bold text-[var(--evergreen)]">
+                  {format(totalMachines)}
+                </div>
+              </div>
+              <div className="control-surface px-4 py-3">
+                <div className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                  {text.rawInputs}
+                </div>
+                <div className="mt-2 text-3xl font-bold text-[var(--evergreen)]">
+                  {plan.raw.length}
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
-        <section className="grid gap-5">
-          <aside className="grid gap-5 md:grid-cols-[minmax(320px,1fr)_minmax(380px,0.9fr)_220px_220px]">
-            <div className="surface p-4">
+        <section className="grid gap-3 lg:grid-cols-[270px_minmax(0,1fr)]">
+          <aside className="relative z-40 grid content-start gap-3 lg:sticky lg:top-4">
+            <div className="surface relative z-30 p-4">
               <label
-                className="text-sm font-semibold text-[#496238]"
+                className="text-sm font-semibold text-[var(--evergreen)]"
                 htmlFor="target-rate"
               >
                 {text.targetRate}
@@ -1114,7 +1342,7 @@ export default function Home() {
                   <button
                     aria-expanded={itemMenuOpen}
                     aria-label={`${text.chooseItem}: ${items[selectedItem].name}`}
-                    className="icon-frame grid h-12 w-12 place-items-center transition hover:-translate-y-0.5 hover:border-[#5f8f56] hover:bg-white"
+                    className="icon-frame grid h-12 w-12 place-items-center transition hover:-translate-y-0.5 hover:border-[var(--aether)]/45 hover:bg-white/75"
                     title={items[selectedItem].name}
                     type="button"
                     onClick={() => setItemMenuOpen((open) => !open)}
@@ -1128,8 +1356,8 @@ export default function Home() {
                     />
                   </button>
                   {itemMenuOpen ? (
-                    <div className="surface absolute left-0 top-[calc(100%+8px)] z-50 w-80 p-3 shadow-xl shadow-[#5d4328]/20">
-                      <div className="grid grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-2">
+                    <div className="popover-surface absolute left-0 top-[calc(100%+8px)] z-50 w-[250px] max-w-[calc(100vw-2rem)] p-2.5">
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-2">
                         {outputItems.map((item) => {
                           const active = selectedItem === item;
 
@@ -1138,8 +1366,8 @@ export default function Home() {
                               aria-label={items[item].name}
                               className={`grid h-12 min-w-12 place-items-center rounded-md border transition hover:-translate-y-0.5 ${
                                 active
-                                  ? "border-[#5f8f56] bg-[#edf6e4] shadow-sm ring-2 ring-[#5f8f56]/25"
-                                  : "border-[#8a6138]/20 bg-[#fffaf0] shadow-sm hover:border-[#5f8f56] hover:bg-white"
+                                  ? "border-[var(--aether)] bg-white/75 shadow-sm ring-2 ring-[var(--aether)]/20"
+                                  : "border-white/45 bg-white/35 shadow-sm hover:border-[var(--aether)]/45 hover:bg-white/70"
                               }`}
                               key={item}
                               title={items[item].name}
@@ -1165,7 +1393,7 @@ export default function Home() {
                 </div>
                 <input
                   id="target-rate"
-                  className="control-surface h-12 px-3 text-lg font-semibold outline-none transition focus:border-[#c2633d] focus:ring-2 focus:ring-[#d9a84d]/35"
+                  className="control-surface h-12 min-w-0 px-3 text-lg font-semibold outline-none transition focus:border-[var(--aether)]/55 focus:ring-2 focus:ring-[var(--aether)]/20"
                   min="0"
                   step="0.25"
                   type="number"
@@ -1178,17 +1406,17 @@ export default function Home() {
                     )
                   }
                 />
-                <span className="grid h-12 place-items-center rounded-md border border-[#8a6138]/20 bg-[#ead9b7]/85 px-3 text-sm font-semibold text-[#60482c] shadow-inner">
+                <span className="grid h-12 place-items-center rounded-md border border-white/45 bg-white/35 px-3 text-sm font-semibold text-[var(--muted)] shadow-inner backdrop-blur">
                   /min
                 </span>
               </div>
             </div>
 
-            <div className="surface p-4">
-              <div className="text-sm font-semibold text-[#496238]">
+            <div className="surface relative z-20 p-4">
+              <div className="text-sm font-semibold text-[var(--evergreen)]">
                 {text.crewPerMachine}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-5">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 {crewOptions.map((option) => {
                   const active = crewOptionId === option.id;
 
@@ -1197,8 +1425,8 @@ export default function Home() {
                     key={option.id}
                     className={`grid min-h-20 gap-1 rounded-md border px-2 py-2 text-sm font-bold transition hover:-translate-y-0.5 ${
                       active
-                        ? "border-[#a95a35] bg-[#fff0d8] text-[#1e2518] shadow-sm ring-2 ring-[#b45d36]/25"
-                        : "border-[#8a6138]/20 bg-[#fffaf0] text-[#394333] shadow-sm hover:border-[#b45d36] hover:bg-white"
+                        ? "border-[var(--copper)]/45 bg-white/75 text-[var(--foreground)] shadow-sm ring-2 ring-[var(--copper)]/18"
+                        : "border-white/45 bg-white/35 text-[var(--ink-soft)] shadow-sm hover:border-[var(--copper)]/38 hover:bg-white/70"
                     }`}
                     title={`${option.label}: ${format(option.multiplier)}x`}
                     type="button"
@@ -1207,7 +1435,7 @@ export default function Home() {
                     <span className="flex items-center justify-center -space-x-2">
                       {option.sparks.map((spark, index) => (
                         <span
-                          className="icon-frame grid h-9 w-9 place-items-center bg-white"
+                          className="icon-frame grid h-9 w-9 place-items-center bg-white/70"
                           key={`${option.id}-${spark}-${index}`}
                         >
                           <Image
@@ -1221,7 +1449,7 @@ export default function Home() {
                       ))}
                     </span>
                     <span className="truncate text-xs">{option.label}</span>
-                    <span className="text-xs text-[#8b5b2f]">
+                    <span className="text-xs text-[var(--copper)]">
                       {format(option.multiplier)}x
                     </span>
                   </button>
@@ -1230,156 +1458,17 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="surface p-4">
-              <div className="text-sm font-semibold text-[#746142]">
-                {text.machines}
-              </div>
-              <div className="mt-3 text-3xl font-bold text-[#26351f]">
-                {format(totalMachines)}
-              </div>
-              <div className="text-sm text-[#746142]">
-                {text.with} {crewOption.label}
-              </div>
-            </div>
-
-            <div className="surface p-4">
-              <div className="text-sm font-semibold text-[#746142]">
-                {text.rawInputs}
-              </div>
-              <div className="mt-3 text-3xl font-bold text-[#26351f]">
-                {plan.raw.length}
-              </div>
-              <div className="text-sm text-[#746142]">{text.sourcesInPlan}</div>
-            </div>
-
-          </aside>
-
-          <section className="flex min-w-0 flex-col gap-5">
-            <div className="surface overflow-hidden">
-              <div className="surface-header px-4 py-3">
-                <h2 className="text-lg font-bold">{text.flow}</h2>
-              </div>
-              <div>
-                <FlowGraph
-                  language={language}
-                  tree={plan.tree}
-                  targetItem={selectedItem}
-                />
-              </div>
-            </div>
-
-            <div className="surface overflow-hidden">
-              <div className="surface-header flex items-center justify-between px-4 py-3">
-                <h2 className="text-lg font-bold">{text.productionPlan}</h2>
-                <span className="text-sm font-semibold text-[#746142]">
-                  {text.machineCount}
-                </span>
-              </div>
-              <div className="divide-y divide-[#8a6138]/15">
-                {plan.machines.map(({ recipe, machines, rate }) => {
-                  const perMachine =
-                    recipe.cyclesPerMinuteOneStumpy *
-                    recipe.productAmount *
-                    crewOption.multiplier;
-
-                  return (
-                    <article
-                      className="grid gap-3 p-4 transition hover:bg-white/40 md:grid-cols-[auto_1fr_auto]"
-                      key={recipe.id}
-                    >
-                      <WorkstationIcon id={recipe.workstation} />
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-bold">
-                            {workstations[recipe.workstation].name}
-                          </h3>
-                          <span className="chip px-2 py-1 text-xs font-semibold text-[#3f6238]">
-                            {recipe.name}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#746142]">
-                          <span>{format(rate)}/min {text.output}</span>
-                          <span>{format(perMachine)}/min {text.perMachine}</span>
-                          <a
-                            className="font-semibold text-[#9b4328] hover:underline"
-                            href={recipe.wiki}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Wiki
-                          </a>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-[#26351f]">
-                          {format(machines)}
-                        </div>
-                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8b5b2f]">
-                          {text.machines}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="grid gap-5 xl:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-              <div className="surface overflow-hidden">
-                <div className="surface-header px-4 py-3">
-                  <h2 className="text-lg font-bold">{text.rawDemand}</h2>
-                </div>
-                <div className="divide-y divide-[#8a6138]/15">
-                  {plan.raw.map(([item, rate]) => (
-                    <div
-                      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 p-4 transition hover:bg-white/40"
-                      key={item}
-                    >
-                      <ItemIcon item={item} size="sm" />
-                      <a
-                        className="font-semibold text-[#1e2518] hover:text-[#9b4328]"
-                        href={items[item].wiki}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {items[item].name}
-                      </a>
-                      <div className="font-bold">{format(rate)}/min</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="surface p-4">
-                <h2 className="text-lg font-bold">{text.activeTarget}</h2>
-                <div className="mt-4 flex items-center gap-3">
-                  <ItemIcon item={selectedItem} />
-                  <div>
-                    <div className="text-xl font-bold">
-                      {items[selectedItem].name}
-                    </div>
-                    <div className="text-sm text-[#746142]">
-                      {format(target)}/min {text.with} {crewOption.label}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="surface p-4">
+            <div className="surface relative z-10 p-4">
               <h2 className="text-lg font-bold">{text.recipeRules}</h2>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="mt-3 grid gap-3">
                 {recipeOptions.map((item) => (
-                  <label
-                    className="control-surface grid gap-2 p-3"
-                    key={item}
-                  >
-                    <span className="flex items-center gap-2 text-sm font-semibold text-[#496238]">
+                  <label className="grid gap-2" key={item}>
+                    <span className="flex items-center gap-2 text-sm font-semibold text-[var(--evergreen)]">
                       <ItemIcon item={item} size="sm" />
                       {items[item].name}
                     </span>
                     <select
-                      className="control-surface h-11 bg-white px-3 text-sm font-semibold outline-none focus:border-[#c2633d] focus:ring-2 focus:ring-[#d9a84d]/35"
+                      className="control-surface h-11 bg-white/45 px-3 text-sm font-semibold outline-none focus:border-[var(--aether)]/55 focus:ring-2 focus:ring-[var(--aether)]/20"
                       value={
                         recipeChoice[item] ??
                         defaultRecipeIdByProduct[item] ??
@@ -1404,6 +1493,122 @@ export default function Home() {
                 ))}
               </div>
             </div>
+
+          </aside>
+
+          <section className="flex min-w-0 flex-col gap-3">
+            <div className="surface overflow-hidden">
+              <div className="surface-header px-4 py-3">
+                <h2 className="text-lg font-bold">{text.flow}</h2>
+              </div>
+              <div>
+                <FlowGraph
+                  key={plan.tree.key}
+                  language={language}
+                  tree={plan.tree}
+                  targetItem={selectedItem}
+                />
+              </div>
+            </div>
+
+            <div className="surface overflow-hidden">
+              <div className="surface-header flex items-center justify-between px-4 py-3">
+                <h2 className="text-lg font-bold">{text.productionPlan}</h2>
+                <span className="text-sm font-semibold text-[var(--muted)]">
+                  {text.machineCount}
+                </span>
+              </div>
+              <div className="divide-y divide-[var(--line)]">
+                {plan.machines.map(({ recipe, machines, rate }) => {
+                  const perMachine =
+                    recipe.cyclesPerMinuteOneStumpy *
+                    recipe.productAmount *
+                    crewOption.multiplier;
+
+                  return (
+                    <article
+                      className="grid gap-3 p-4 transition hover:bg-white/32 md:grid-cols-[auto_1fr_auto]"
+                      key={recipe.id}
+                    >
+                      <WorkstationIcon id={recipe.workstation} />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-bold">
+                            {workstations[recipe.workstation].name}
+                          </h3>
+                          <span className="chip px-2 py-1 text-xs font-semibold text-[var(--evergreen)]">
+                            {recipe.name}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--muted)]">
+                          <span>{format(rate)}/min {text.output}</span>
+                          <span>{format(perMachine)}/min {text.perMachine}</span>
+                          <a
+                            className="font-semibold text-[var(--copper)] hover:underline"
+                            href={recipe.wiki}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Wiki
+                          </a>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-[var(--evergreen)]">
+                          {format(machines)}
+                        </div>
+                        <div className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--copper)]">
+                          {text.machines}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+              <div className="surface overflow-hidden">
+                <div className="surface-header px-4 py-3">
+                  <h2 className="text-lg font-bold">{text.rawDemand}</h2>
+                </div>
+                <div className="divide-y divide-[var(--line)]">
+                  {plan.raw.map(([item, rate]) => (
+                    <div
+                      className="grid grid-cols-[auto_1fr_auto] items-center gap-3 p-4 transition hover:bg-white/32"
+                      key={item}
+                    >
+                      <ItemIcon item={item} size="sm" />
+                      <a
+                        className="font-semibold text-[var(--foreground)] hover:text-[var(--copper)]"
+                        href={items[item].wiki}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {items[item].name}
+                      </a>
+                      <div className="font-bold">{format(rate)}/min</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="surface p-4">
+                <h2 className="text-lg font-bold">{text.activeTarget}</h2>
+                <div className="mt-4 flex items-center gap-3">
+                  <ItemIcon item={selectedItem} />
+                  <div>
+                    <div className="text-xl font-bold">
+                      {items[selectedItem].name}
+                    </div>
+                    <div className="text-sm text-[var(--muted)]">
+                      {format(target)}/min {text.with} {crewOption.label}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </section>
         </section>
       </div>
