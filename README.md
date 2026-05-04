@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+  <img src="public/oddsparks/spark-workbench.png" alt="Spark Workbench" width="96" />
+  <h1>Sparkulator</h1>
+  <p>
+    A visual production calculator for
+    <a href="https://store.steampowered.com/app/1817800/Oddsparks_An_Automation_Adventure/">Oddsparks: An Automation Adventure</a>.
+  </p>
+
+  <p>
+    <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16.2.4-111111?style=for-the-badge&logo=nextdotjs" />
+    <img alt="React" src="https://img.shields.io/badge/React-19.2.4-3b6f86?style=for-the-badge&logo=react" />
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-2f6db3?style=for-the-badge&logo=typescript" />
+    <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-4-3f7f72?style=for-the-badge&logo=tailwindcss" />
+    <img alt="License" src="https://img.shields.io/badge/License-MIT-d8a74c?style=for-the-badge" />
+  </p>
+</div>
+
+---
+
+## What It Does
+
+Sparkulator turns Oddsparks crafting chains into a clear production plan. Pick an item, set the desired output per minute, choose the Sparks working each machine, and the app calculates the machine counts, recipe flow, and raw input demand needed to keep that target running.
+
+It is built for players who want to design cleaner automation layouts without doing repeated rate math by hand.
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="public/oddsparks/wooden-log.png" alt="Wooden Log" width="54" /><br />Raw Inputs</td>
+      <td align="center"><img src="public/oddsparks/sawbench.png" alt="Sawbench" width="54" /><br />Machines</td>
+      <td align="center"><img src="public/oddsparks/crafty-spark.png" alt="Crafty Spark" width="54" /><br />Crew Speed</td>
+      <td align="center"><img src="public/oddsparks/wooden-panel.png" alt="Wooden Panel" width="54" /><br />Target Output</td>
+    </tr>
+  </table>
+</div>
+
+## Highlights
+
+- Visual production graph that shows how ingredients flow into machines and final output.
+- Machine count summary for every workstation in the selected plan.
+- Raw demand breakdown in items per minute.
+- Crew presets for Stumpy and Crafty Spark combinations.
+- Recipe rule selection for items with multiple production paths.
+- English and German UI switch.
+- Recipe and item links back to the Oddsparks wiki.
+
+## Planning Flow
+
+```mermaid
+flowchart LR
+  A["Choose target item"] --> B["Set output / min"]
+  B --> C["Select crew per machine"]
+  C --> D["Calculate recipe chain"]
+  D --> E["Show machine counts"]
+  D --> F["Show raw input demand"]
+  D --> G["Render visual flow graph"]
+```
+
+## Example Use Cases
+
+- Find out how many Sawbenches and Wood Workshops are needed for a steady Wooden Panel line.
+- Compare Stumpy and Crafty crew setups before rebuilding a factory section.
+- Trace the upstream material demand for Spark crafting.
+- Keep wiki recipe data close while planning an automation build.
+
+## Tech Stack
+
+Sparkulator is a client-side Next.js app using React, TypeScript, Tailwind CSS, and local Oddsparks item artwork stored in `public/oddsparks`.
+
+```text
+app/page.tsx          Main calculator UI, recipe data, and flow graph
+app/globals.css       Visual theme and shared surfaces
+public/oddsparks/     Item and workstation artwork
+```
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies and start the development server:
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```text
+http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Available Scripts
 
-## Learn More
+```bash
+npm run dev      # Start the local development server
+npm run build    # Create a production build
+npm run start    # Run the production server
+npm run lint     # Run ESLint
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Data Source
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The calculator currently uses recipe data and wiki links embedded in the app, based on the public Oddsparks wiki:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+[oddsparks.wiki.gg](https://oddsparks.wiki.gg)
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Sparkulator is released under the [MIT License](LICENSE).
