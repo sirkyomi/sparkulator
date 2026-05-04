@@ -116,6 +116,7 @@ const uiText = {
 const appVersion = packageJson.version;
 
 const wikiBase = "https://oddsparks.wiki.gg/wiki/";
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 
 const items: Record<
   ItemId,
@@ -123,128 +124,128 @@ const items: Record<
 > = {
   "wooden-log": {
     name: "Wooden Log",
-    image: "/oddsparks/wooden-log.png",
+    image: `${basePath}/oddsparks/wooden-log.png`,
     wiki: `${wikiBase}Wooden_Log`,
     group: "wood",
   },
   "tree-bark": {
     name: "Tree Bark",
-    image: "/oddsparks/tree-bark.png",
+    image: `${basePath}/oddsparks/tree-bark.png`,
     wiki: `${wikiBase}Tree_Bark`,
     group: "wood",
   },
   leaves: {
     name: "Leaves",
-    image: "/oddsparks/leaves.png",
+    image: `${basePath}/oddsparks/leaves.png`,
     wiki: `${wikiBase}Leaves`,
     group: "wood",
   },
   "sawn-timber": {
     name: "Sawn Timber",
-    image: "/oddsparks/sawn-timber.png",
+    image: `${basePath}/oddsparks/sawn-timber.png`,
     wiki: `${wikiBase}Sawn_Timber`,
     group: "wood",
   },
   "wooden-panel": {
     name: "Wooden Panel",
-    image: "/oddsparks/wooden-panel.png",
+    image: `${basePath}/oddsparks/wooden-panel.png`,
     wiki: `${wikiBase}Wooden_Panel`,
     group: "wood",
   },
   rope: {
     name: "Rope",
-    image: "/oddsparks/rope.png",
+    image: `${basePath}/oddsparks/rope.png`,
     wiki: `${wikiBase}Rope`,
     group: "wood",
   },
   fabric: {
     name: "Fabric",
-    image: "/oddsparks/fabric.png",
+    image: `${basePath}/oddsparks/fabric.png`,
     wiki: `${wikiBase}Fabric`,
     group: "wood",
   },
   fertiliser: {
     name: "Fertiliser",
-    image: "/oddsparks/fertiliser.png",
+    image: `${basePath}/oddsparks/fertiliser.png`,
     wiki: `${wikiBase}Fertiliser`,
     group: "wood",
   },
   ladder: {
     name: "Ladder",
-    image: "/oddsparks/ladder.png",
+    image: `${basePath}/oddsparks/ladder.png`,
     wiki: `${wikiBase}Ladder`,
     group: "wood",
   },
   "wooden-blade": {
     name: "Wooden Blade",
-    image: "/oddsparks/wooden-blade.png",
+    image: `${basePath}/oddsparks/wooden-blade.png`,
     wiki: `${wikiBase}Wooden_Blade`,
     group: "wood",
   },
   coal: {
     name: "Coal",
-    image: "/oddsparks/coal.png",
+    image: `${basePath}/oddsparks/coal.png`,
     wiki: `${wikiBase}Coal`,
     group: "wood",
   },
   "aether-shard": {
     name: "Aether Shard",
-    image: "/oddsparks/aether-shard.png",
+    image: `${basePath}/oddsparks/aether-shard.png`,
     wiki: `${wikiBase}Aether_Shard`,
     group: "raw",
   },
   "aetheric-pellet": {
     name: "Aetheric Pellet",
-    image: "/oddsparks/aetheric-pellet.png",
+    image: `${basePath}/oddsparks/aetheric-pellet.png`,
     wiki: `${wikiBase}Aetheric_Pellet`,
     group: "raw",
   },
   "stumpy-spark": {
     name: "Stumpy Spark",
-    image: "/oddsparks/stumpy-spark.png",
+    image: `${basePath}/oddsparks/stumpy-spark.png`,
     wiki: `${wikiBase}Stumpy_Spark`,
     group: "spark",
   },
   "crafty-spark": {
     name: "Crafty Spark",
-    image: "/oddsparks/crafty-spark.png",
+    image: `${basePath}/oddsparks/crafty-spark.png`,
     wiki: `${wikiBase}Crafty_Spark`,
     group: "spark",
   },
   "carry-spark": {
     name: "Carry Spark",
-    image: "/oddsparks/carry-spark.png",
+    image: `${basePath}/oddsparks/carry-spark.png`,
     wiki: `${wikiBase}Carry_Spark`,
     group: "spark",
   },
   "choppy-spark": {
     name: "Choppy Spark",
-    image: "/oddsparks/choppy-spark.png",
+    image: `${basePath}/oddsparks/choppy-spark.png`,
     wiki: `${wikiBase}Choppy_Spark`,
     group: "spark",
   },
   "loamy-spark": {
     name: "Loamy Spark",
-    image: "/oddsparks/loamy-spark.png",
+    image: `${basePath}/oddsparks/loamy-spark.png`,
     wiki: `${wikiBase}Loamy_Spark`,
     group: "spark",
   },
 };
 
 const workstations: Record<WorkstationId, { name: string; image?: string }> = {
-  logger: { name: "Logger", image: "/oddsparks/logger.png" },
-  sawbench: { name: "Sawbench", image: "/oddsparks/sawbench.png" },
-  loom: { name: "Loom", image: "/oddsparks/loom.png" },
-  cutter: { name: "Cutter", image: "/oddsparks/cutter.png" },
+  logger: { name: "Logger", image: `${basePath}/oddsparks/logger.png` },
+  sawbench: { name: "Sawbench", image: `${basePath}/oddsparks/sawbench.png` },
+  loom: { name: "Loom", image: `${basePath}/oddsparks/loom.png` },
+  cutter: { name: "Cutter", image: `${basePath}/oddsparks/cutter.png` },
   "wood-workshop": {
     name: "Wood Workshop",
-    image: "/oddsparks/wood-workshop.png",
+    image: `${basePath}/oddsparks/wood-workshop.png`,
   },
   "spark-workbench": {
     name: "Spark Workbench",
-    image: "/oddsparks/spark-workbench.png",
+    image: `${basePath}/oddsparks/spark-workbench.png`,
   },
-  furnace: { name: "Furnace", image: "/oddsparks/furnace.png" },
+  furnace: { name: "Furnace", image: `${basePath}/oddsparks/furnace.png` },
   raw: { name: "Raw source" },
 };
 
