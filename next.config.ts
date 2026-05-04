@@ -1,9 +1,7 @@
-const isProd = process.env.NODE_ENV === 'production'
-const basePath = isProd ? '/sparkulator' : ''
+import type { NextConfig } from "next";
 
-export default {
-  basePath,
-  env: {
-    NEXT_PUBLIC_BASE_PATH: basePath,
-  },
-}
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
