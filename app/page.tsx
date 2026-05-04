@@ -1062,31 +1062,33 @@ export default function Home() {
             >
               {text.wikiData}
             </a>
-            <div className="flex rounded-md border border-[#8a6138]/20 bg-[#fffaf0]/70 p-1 shadow-inner">
-              {(["en", "de"] as const).map((option) => {
-                const active = language === option;
+            <div className="grid justify-items-end gap-1.5">
+              <span className="rounded-md border border-[#8a6138]/15 bg-[#fffaf0]/55 px-2.5 py-1 text-xs font-bold text-[#746142] shadow-inner">
+                v{appVersion}
+              </span>
+              <div className="flex rounded-md border border-[#8a6138]/20 bg-[#fffaf0]/70 p-1 shadow-inner">
+                {(["en", "de"] as const).map((option) => {
+                  const active = language === option;
 
-                return (
-                  <button
-                    aria-pressed={active}
-                    className={`rounded-[5px] px-3 py-1.5 text-sm font-bold transition ${
-                      active
-                        ? "bg-[#b35d36] text-white shadow-sm"
-                        : "text-[#60482c] hover:bg-white"
-                    }`}
-                    key={option}
-                    title={text.language}
-                    type="button"
-                    onClick={() => setLanguage(option)}
-                  >
-                    {option.toUpperCase()}
-                  </button>
-                );
-              })}
+                  return (
+                    <button
+                      aria-pressed={active}
+                      className={`rounded-[5px] px-3 py-1.5 text-sm font-bold transition ${
+                        active
+                          ? "bg-[#b35d36] text-white shadow-sm"
+                          : "text-[#60482c] hover:bg-white"
+                      }`}
+                      key={option}
+                      title={text.language}
+                      type="button"
+                      onClick={() => setLanguage(option)}
+                    >
+                      {option.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <span className="rounded-md border border-[#8a6138]/15 bg-[#fffaf0]/55 px-2.5 py-2 text-xs font-bold text-[#746142] shadow-inner">
-              v{appVersion}
-            </span>
           </div>
         </header>
 
