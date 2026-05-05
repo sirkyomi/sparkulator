@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import sparkulatorIcon from "./icon.png";
 import {
   useEffect,
   useMemo,
@@ -1229,7 +1230,14 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-none flex-col gap-4 px-1.5 py-3 sm:px-2 lg:px-3">
         <nav className="surface flex flex-wrap items-center justify-between gap-3 px-3 py-3">
           <div className="flex min-w-0 items-center gap-3">
-            <ItemIcon item={selectedItem} size="sm" />
+            <span className="icon-frame grid h-10 w-10 shrink-0 place-items-center">
+              <Image
+                className="h-8 w-8 object-contain"
+                src={sparkulatorIcon}
+                alt="Sparkulator"
+                priority
+              />
+            </span>
             <div className="min-w-0">
               <div className="flex items-baseline gap-2">
                 <h1 className="truncate text-xl font-bold tracking-normal sm:text-2xl">
