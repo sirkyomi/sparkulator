@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Sparkulator",
   description: "Oddsparks production calculator",
+  icons: {
+    icon: [
+      {
+        url: "/icon.png"
+      }
+    ]
+  }
 };
 
 export default function RootLayout({
