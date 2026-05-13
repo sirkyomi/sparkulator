@@ -63,32 +63,36 @@ export function SparkulatorApp() {
           format={format}
         />
 
-        <section className="grid gap-3 lg:grid-cols-[270px_minmax(0,1fr)]">
-          <PlannerSidebar
-            selectedItem={selectedItem}
-            targetRate={targetRate}
-            crewOptionId={crewOptionId}
-            itemMenuOpen={itemMenuOpen}
-            recipeChoice={recipeChoice}
-            text={text}
-            format={format}
-            onSelectedItemChange={setSelectedItem}
-            onTargetRateChange={setTargetRate}
-            onCrewOptionChange={setCrewOptionId}
-            onItemMenuOpenChange={setItemMenuOpen}
-            onRecipeChoiceChange={handleRecipeChoiceChange}
-          />
+        <section className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,3fr)]">
+          <div className="grid min-w-0 content-start gap-3">
+            <PlannerSidebar
+              selectedItem={selectedItem}
+              targetRate={targetRate}
+              crewOptionId={crewOptionId}
+              itemMenuOpen={itemMenuOpen}
+              recipeChoice={recipeChoice}
+              text={text}
+              format={format}
+              onSelectedItemChange={setSelectedItem}
+              onTargetRateChange={setTargetRate}
+              onCrewOptionChange={setCrewOptionId}
+              onItemMenuOpenChange={setItemMenuOpen}
+              onRecipeChoiceChange={handleRecipeChoiceChange}
+            />
+          </div>
 
-          <PlanResults
-            language={language}
-            plan={plan}
-            selectedItem={selectedItem}
-            target={target}
-            crewLabel={crewOption.label}
-            crewMultiplier={crewOption.multiplier}
-            text={text}
-            format={format}
-          />
+          <div className="min-w-0">
+            <PlanResults
+              language={language}
+              plan={plan}
+              selectedItem={selectedItem}
+              target={target}
+              crewLabel={crewOption.label}
+              crewMultiplier={crewOption.multiplier}
+              text={text}
+              format={format}
+            />
+          </div>
         </section>
       </div>
     </main>

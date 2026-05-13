@@ -65,6 +65,17 @@ export function calculatePlan(
       };
     }
 
+    if (recipe.workstation === "raw") {
+      raw.set(current, (raw.get(current) ?? 0) + currentRate);
+      return {
+        key: `${trail.join(".")}.${current}.${recipe.id}`,
+        item: current,
+        rate: currentRate,
+        machines: 0,
+        children: [],
+      };
+    }
+
     if (stack.includes(current)) {
       raw.set(current, (raw.get(current) ?? 0) + currentRate);
       return {
