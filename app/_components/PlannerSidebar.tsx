@@ -3,6 +3,7 @@ import Image from "next/image";
 import {
   crewOptions,
   defaultRecipeIdByProduct,
+  itemPhases,
   items,
   outputItems,
   recipesByProduct,
@@ -27,6 +28,12 @@ type PlannerSidebarProps = {
   onRecipeChoiceChange: (item: ItemId, recipeId: string) => void;
 };
 
+type ItemPickerPanelProps = {
+  selectedItem: ItemId;
+  onSelectedItemChange: (item: ItemId) => void;
+  onItemMenuOpenChange: (open: boolean) => void;
+};
+
 export function PlannerSidebar({
   selectedItem,
   targetRate,
@@ -46,7 +53,7 @@ export function PlannerSidebar({
   );
 
   return (
-    <aside className="relative z-40 grid content-start gap-3 lg:sticky lg:top-4">
+    <aside className="grid content-start gap-3 lg:sticky lg:top-4 lg:self-start">
       <div className="surface relative z-30 p-4">
         <label
           className="text-sm font-semibold text-[var(--evergreen)]"
@@ -55,8 +62,9 @@ export function PlannerSidebar({
           {text.targetRate}
         </label>
         <div className="mt-3 grid grid-cols-[auto_1fr_auto] gap-3">
-          <div className="relative">
+          <div>
             <button
+              aria-controls="item-picker"
               aria-expanded={itemMenuOpen}
               aria-label={`${text.chooseItem}: ${items[selectedItem].name}`}
               className="icon-frame grid h-12 w-12 place-items-center transition hover:-translate-y-0.5 hover:border-[var(--aether)]/45 hover:bg-white/75"
@@ -72,41 +80,6 @@ export function PlannerSidebar({
                 height={40}
               />
             </button>
-            {itemMenuOpen ? (
-              <div className="popover-surface absolute left-0 top-[calc(100%+8px)] z-50 w-[250px] max-w-[calc(100vw-2rem)] p-2.5">
-                <div className="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-2">
-                  {outputItems.map((item) => {
-                    const active = selectedItem === item;
-
-                    return (
-                      <button
-                        aria-label={items[item].name}
-                        className={`grid h-12 min-w-12 place-items-center rounded-md border transition hover:-translate-y-0.5 ${
-                          active
-                            ? "border-[var(--aether)] bg-white/75 shadow-sm ring-2 ring-[var(--aether)]/20"
-                            : "border-white/45 bg-white/35 shadow-sm hover:border-[var(--aether)]/45 hover:bg-white/70"
-                        }`}
-                        key={item}
-                        title={items[item].name}
-                        type="button"
-                        onClick={() => {
-                          onSelectedItemChange(item);
-                          onItemMenuOpenChange(false);
-                        }}
-                      >
-                        <Image
-                          className="h-9 w-9 object-contain"
-                          src={items[item].image}
-                          alt=""
-                          width={40}
-                          height={40}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ) : null}
           </div>
           <input
             id="target-rate"
@@ -127,6 +100,18 @@ export function PlannerSidebar({
             /min
           </span>
         </div>
+        {itemMenuOpen ? (
+          <div
+            className="popover-surface absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-[min(70vh,560px)] overflow-y-auto p-2.5"
+            id="item-picker"
+          >
+            <ItemPickerContent
+              selectedItem={selectedItem}
+              onSelectedItemChange={onSelectedItemChange}
+              onItemMenuOpenChange={onItemMenuOpenChange}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="surface relative z-20 p-4">
@@ -206,5 +191,61 @@ export function PlannerSidebar({
         </div>
       </div>
     </aside>
+  );
+}
+
+function ItemPickerContent({
+  selectedItem,
+  onSelectedItemChange,
+  onItemMenuOpenChange,
+}: ItemPickerPanelProps) {
+  const outputItemsByPhase = itemPhases
+    .map((phase) => ({
+      ...phase,
+      items: outputItems.filter((item) => items[item].phase === phase.id),
+    }))
+    .filter((phase) => phase.items.length > 0);
+
+  return (
+    <div className="grid gap-3">
+      {outputItemsByPhase.map((phase) => (
+        <section className="grid gap-2" key={phase.id}>
+          <div className="px-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--copper)]">
+            {phase.label}
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(42px,1fr))] gap-2">
+            {phase.items.map((item) => {
+              const active = selectedItem === item;
+
+              return (
+                <button
+                  aria-label={items[item].name}
+                  className={`grid h-12 min-w-12 place-items-center rounded-md border transition hover:-translate-y-0.5 ${
+                    active
+                      ? "border-[var(--aether)] bg-white/75 shadow-sm ring-2 ring-[var(--aether)]/20"
+                      : "border-white/45 bg-white/35 shadow-sm hover:border-[var(--aether)]/45 hover:bg-white/70"
+                  }`}
+                  key={item}
+                  title={items[item].name}
+                  type="button"
+                  onClick={() => {
+                    onSelectedItemChange(item);
+                    onItemMenuOpenChange(false);
+                  }}
+                >
+                  <Image
+                    className="h-9 w-9 object-contain"
+                    src={items[item].image}
+                    alt=""
+                    width={40}
+                    height={40}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
